@@ -120,7 +120,7 @@ pytest
 python scripts/verify_stdio.py
 python scripts/verify_whu.py --login
 python scripts/sample_whu_coverage.py
-python -m build --no-isolation
+python -m build
 ```
 
 离线测试与协议握手不要求联网或启动浏览器。真实通路测试需要网络及本人的机构权限；原始报告、样本 PDF 和认证资料不进入 Git 或分发包。

@@ -61,7 +61,7 @@ def main():
               'samples': [], 'calls': []}
 
     def save():
-        (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
+        (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         lines = ['# 武大图书馆通路抽样', '',
                  '仅代表本次网络、账号与具体论文，不代表整库权限；公开来源下载单独标记。', '',
                  '| 平台 | 检索定位 | 目标页 | 武大代理 | PDF | 结果 |',
@@ -69,7 +69,7 @@ def main():
         for row in report['samples']:
             lines.append('| ' + ' | '.join(str(row.get(k, '—')).replace('|', '/') for k in
                 ('publisher', 'search_found', 'page_read', 'whu_proxy', 'pdf_saved', 'outcome')) + ' |')
-        (args.output / 'report.md').write_text('\n'.join(lines) + '\n')
+        (args.output / 'report.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
     def call(tool, arguments):
         started = time.monotonic()

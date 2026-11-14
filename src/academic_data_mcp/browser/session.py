@@ -192,7 +192,7 @@ class WebSession:
             state = self.data / 'storage.json'
             if state.exists():
                 try:
-                    saved = json.loads(state.read_text())
+                    saved = json.loads(state.read_text(encoding="utf-8"))
                     await self.context.add_cookies(saved.get('cookies', []))
                 except (ValueError, OSError, BrowserError):
                     pass  # stale state must not prevent a new manual login

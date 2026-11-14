@@ -47,7 +47,7 @@ class StdioClient:
         self.log = LOG.open("w", encoding="utf-8")
         self.proc = subprocess.Popen(
             [sys.executable, "-m", "academic_data_mcp", "serve"],
-            cwd=str(ROOT), env=env, text=True, bufsize=1,
+            cwd=str(ROOT), env=env, text=True, encoding="utf-8", bufsize=1,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=self.log,
         )

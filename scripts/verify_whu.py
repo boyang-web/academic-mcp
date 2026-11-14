@@ -86,7 +86,7 @@ def main():
     finally:
         client.close()
         report_path = args.output / 'report.json'
-        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2))
+        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         print('报告：', report_path, flush=True)
 
 

@@ -28,4 +28,4 @@ jobs:
       - run: python -m pytest -q
       - run: python scripts/verify_stdio.py
       - if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
-        run: python -m build --no-isolation
+        run: python -m build
