@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "academic-data-mcp"
+version = "0.3.0"
+description = "WHU Library-first academic access gateway with supplementary CNKI and CSMAR connectors"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.10,<2",
+    "playwright>=1.45",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+http = ["uvicorn>=0.30"]
+dev = ["pytest>=8", "build>=1.2"]
+
+[project.scripts]
+academic-data-mcp = "academic_data_mcp.cli:main"
+
+[project.entry-points."academic_data_mcp.providers"]
+cnki = "academic_data_mcp.connectors.cnki:create"
+csmar = "academic_data_mcp.connectors.csmar:create"
+whu = "academic_data_mcp.gateways.whu:create"
+
+[project.urls]
+Repository = "https://github.com/boyang-web/academic-mcp"
+Issues = "https://github.com/boyang-web/academic-mcp/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+academic_data_mcp = ["py.typed", "connectors/cnki/upstream/LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

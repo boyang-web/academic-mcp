@@ -1,0 +1,8 @@
+include README.md
+include THIRD_PARTY_NOTICES.md
+include .env.example
+recursive-include src *.py py.typed LICENSE
+prune legacy
+prune tests
+prune scripts
+global-exclude __pycache__ *.py[cod] .DS_Store
