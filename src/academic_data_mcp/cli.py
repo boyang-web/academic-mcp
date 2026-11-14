@@ -72,6 +72,9 @@ def _doctor(config: AppConfig) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8')
     args = build_parser().parse_args(argv)
     command = args.command or "serve"
     logging.basicConfig(level=logging.WARNING, stream=sys.stderr)

@@ -164,6 +164,9 @@ def login_flow(client: StdioClient, provider: str, wait: int) -> None:
 
 
 def main() -> int:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description="验证 academic-data-mcp 的 stdio 链路")
     parser.add_argument("--providers", default="", help="逗号分隔，默认全部")
     parser.add_argument("--browser-channel", default="", help="覆盖浏览器通道")

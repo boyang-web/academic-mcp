@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -50,6 +51,9 @@ def matches_domain(url, domains):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--only', default='', help='只运行匹配的出版商，逗号分隔')
     parser.add_argument('--output', type=Path, default=Path('verification/2026-11-14/coverage-whu'))
