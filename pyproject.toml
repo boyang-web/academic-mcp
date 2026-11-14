@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "academic-data-mcp"
-version = "0.3.0"
-description = "WHU Library-first academic access gateway with supplementary CNKI and CSMAR connectors"
+version = "0.4.0"
+description = "Unified WHU Library gateway with verified subscription metadata and internal database adapters"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -23,8 +23,6 @@ dev = ["pytest>=8", "build>=1.2"]
 academic-data-mcp = "academic_data_mcp.cli:main"
 
 [project.entry-points."academic_data_mcp.providers"]
-cnki = "academic_data_mcp.connectors.cnki:create"
-csmar = "academic_data_mcp.connectors.csmar:create"
 whu = "academic_data_mcp.gateways.whu:create"
 
 [project.urls]

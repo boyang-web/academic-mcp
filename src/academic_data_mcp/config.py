@@ -13,7 +13,7 @@ from pathlib import Path
 from . import platform as plat
 
 ENV_PREFIX = "ADM_"
-DEFAULT_PROVIDERS = ("whu", "cnki", "csmar")
+DEFAULT_PROVIDERS = ("whu",)
 
 _TRUE = {"1", "true", "yes", "on"}
 
@@ -92,7 +92,7 @@ class AppConfig:
             ),
         }
         values.update({k: v for k, v in overrides.items() if v is not None})
-        enabled = tuple(dict.fromkeys("whu" if str(v).lower() == "luojia" else str(v).lower() for v in values["enabled"]))  # type: ignore[union-attr]
+        enabled = tuple(dict.fromkeys("whu" if str(v).lower() in {"luojia", "cnki", "csmar"} else str(v).lower() for v in values["enabled"]))  # type: ignore[union-attr]
         return cls(
             data_dir=Path(str(values["data_dir"])),
             downloads_dir=Path(str(values["downloads_dir"])),

@@ -21,16 +21,10 @@ ROOT = Path(__file__).resolve().parents[1]
 LOG = ROOT / "verify-stdio.log"
 
 EXPECTED_TOOLS = {
-    "whu_list_databases", "whu_open_database", "whu_access_plan",
-    *{f"{prefix}_{name}" for prefix in ("whu",)
-      for name in ("login_status", "open_login_page", "finish_login", "close_browser",
-                   "search", "read_page", "download_pdf")},
-    "cnki_login_status", "cnki_open_login_page", "cnki_finish_login",
-    "cnki_close_browser", "cnki_search", "cnki_download_pdf",
-    "csmar_login_status", "csmar_open_login_page", "csmar_finish_login",
-    "csmar_close_browser", "csmar_list_series", "csmar_list_databases",
-    "csmar_list_tables", "csmar_get_table_fields",     "csmar_preview",
-    "csmar_download",
+    'whu_list_databases', 'whu_get_database', 'whu_open_database', 'whu_access_plan',
+    'whu_database_capabilities', 'whu_call_database',
+    *{'whu_' + name for name in ('login_status', 'open_login_page', 'finish_login',
+       'close_browser', 'search', 'read_page', 'download_pdf')},
 }
 
 
@@ -129,7 +123,7 @@ def handshake(client: StdioClient) -> dict:
             result = client.request("initialize", {
                 "protocolVersion": version,
                 "capabilities": {},
-                "clientInfo": {"name": "verify-stdio", "version": "0.3.0"},
+                "clientInfo": {"name": "verify-stdio", "version": "0.4.0"},
             })
             client.notify("notifications/initialized")
             return result
@@ -140,7 +134,12 @@ def handshake(client: StdioClient) -> dict:
 
 def login_flow(client: StdioClient, provider: str, wait: int) -> None:
     prefix = provider.lower()
-    opened = _parse(client.call_tool(f"{prefix}_open_login_page"))
+    def invoke(operation):
+        if prefix == 'whu':
+            return _parse(client.call_tool('whu_' + operation))
+        return _parse(client.call_tool('whu_call_database',
+            {'database': prefix, 'operation': operation}))
+    opened = invoke('open_login_page')
     print(json.dumps({"step": "open_login_page", "result": opened},
                      ensure_ascii=False, indent=2), flush=True)
     print(f"\n>>> 浏览器窗口已弹出，请在窗口中完成登录；脚本最多等待 {wait} 秒 <<<\n",
@@ -148,17 +147,17 @@ def login_flow(client: StdioClient, provider: str, wait: int) -> None:
     deadline = time.monotonic() + wait
     finished = None
     while time.monotonic() < deadline:
-        finished = _parse(client.call_tool(f"{prefix}_finish_login"))
+        finished = invoke('finish_login')
         if isinstance(finished, dict) and finished.get("success"):
             break
         time.sleep(8)
     print(json.dumps({"step": "finish_login", "result": finished},
                      ensure_ascii=False, indent=2), flush=True)
-    status = _parse(client.call_tool(f"{prefix}_login_status"))
+    status = invoke('login_status')
     print(json.dumps({"step": "login_status", "result": status},
                      ensure_ascii=False, indent=2), flush=True)
-    probe = ("csmar_list_series" if prefix == "csmar" else "cnki_login_status")
-    data = _parse(client.call_tool(probe))
+    probe = 'list_series' if prefix == 'csmar' else 'login_status'
+    data = invoke(probe)
     print(json.dumps({"step": "data_probe", "tool": probe, "result": data},
                      ensure_ascii=False, indent=2)[:2500], flush=True)
 
@@ -168,10 +167,10 @@ def main() -> int:
         if hasattr(stream, 'reconfigure'):
             stream.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description="验证 academic-data-mcp 的 stdio 链路")
-    parser.add_argument("--providers", default="", help="逗号分隔，默认全部")
+    parser.add_argument("--providers", default="", help="入口配置，默认 whu")
     parser.add_argument("--browser-channel", default="", help="覆盖浏览器通道")
     parser.add_argument("--show-browser", action="store_true")
-    parser.add_argument("--login", default="", help="执行登录验证：cnki 或 csmar")
+    parser.add_argument("--login", default="", choices=("", "whu", "cnki", "csmar"), help="经 WHU 入口执行登录验证")
     parser.add_argument("--wait", type=int, default=240, help="登录等待秒数")
     args = parser.parse_args()
 

@@ -9,7 +9,7 @@ def test_whu_is_primary_and_legacy_config_resolves_to_it(monkeypatch, tmp_path):
     monkeypatch.setenv('ADM_WHU_TIMEOUT', '18')
     old = tmp_path / 'luojia'; old.mkdir()
     config = AppConfig.from_env(data_dir=tmp_path)
-    assert config.enabled == ('whu', 'cnki', 'csmar')
+    assert config.enabled == ('whu',)
     assert config.for_provider('whu').integer('TIMEOUT', 30) == 18
     assert config.provider_data_dir('whu') == old
     assert get('luojia').name == 'whu'

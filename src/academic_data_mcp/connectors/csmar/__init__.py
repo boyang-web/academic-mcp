@@ -4,7 +4,6 @@ from __future__ import annotations
 from academic_data_mcp import platform as plat
 from academic_data_mcp.base import ProviderInfo, ProviderRuntime, ToolSpec
 from academic_data_mcp.config import AppConfig
-from academic_data_mcp.registry import provider
 
 from .client import (CsmarError, CsmarService, LoginRequired,
                      DEFAULT_BASE, DEFAULT_FILE_BASE)
@@ -135,8 +134,6 @@ class CsmarRuntime:
             await close()
 
 
-@provider(name="csmar", title="CSMAR 国泰安", summary=SUMMARY,
-          requires_login=True)
 def create(config: AppConfig) -> ProviderRuntime:
     settings = config.for_provider("csmar")
     service = CsmarService(

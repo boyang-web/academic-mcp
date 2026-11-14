@@ -1,0 +1,34 @@
+{
+  "verified_on": "2026-11-14",
+  "project_version": "0.4.0",
+  "offline_tests_passed": 45,
+  "public_tool_count": 13,
+  "catalogue_details_verified": 280,
+  "examples": [
+    {
+      "platform": "Springer",
+      "scope": "0.4 WHU institutional route",
+      "success": true,
+      "bytes": 458076,
+      "sha256": "2bda7d34559bc88053eae9443bfd901ea2f706edd2faa149ca167064b68af5ca"
+    },
+    {
+      "platform": "CNKI",
+      "scope": "0.4 unified internal adapter",
+      "success": true,
+      "bytes": 1541331,
+      "sha256": "98259ba4020e213ecd52121ae441d808e5c401017644dcb7d8b32c1144d31b18"
+    },
+    {
+      "platform": "CSMAR",
+      "scope": "previous internal engine; unified login confirmed but unified export not repeated",
+      "content_success": true,
+      "download_success": true,
+      "bytes": 60,
+      "sha256": "378ca298c4cb4e56c6b473f9c5fb6303e720ab75dc7cc8ffcf8bbb98877f832c",
+      "table_id": "4",
+      "download_matches_preview": true,
+      "limitation": "Session restoration after restart unstable; not all child databases verified"
+    }
+  ]
+}

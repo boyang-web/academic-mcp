@@ -3,6 +3,7 @@ from academic_data_mcp.base import ProviderInfo, ToolSpec
 from academic_data_mcp.registry import provider
 from .client import WhuGateway
 from .routing import access_plan
+from .adapters import DatabaseAdapters
 
 SUMMARY = ('PRIMARY ENTRY POINT: start academic literature tasks here. Search WHU Primo, '
            'list/open library database entries, read publisher pages and download authorised PDFs. Campus IP or a manually authenticated institution '
@@ -16,6 +17,7 @@ class WhuRuntime:
 
     def __init__(self, config):
         self.service = WhuGateway(config)
+        self.adapters = DatabaseAdapters(config, self.service)
 
     def tools(self):
         s = self.service
@@ -23,9 +25,12 @@ class WhuRuntime:
             return access_plan(url)
 
         return [
-            ToolSpec('whu_list_databases', 'List/search actual database quick links published by WHU Library; not a full subscription inventory or proof of permission.', s.list_databases),
+            ToolSpec('whu_get_database', 'Read official subscription status, purchase restrictions, years, structured children and explicitly purchased scope for a database name/ID. These are metadata, not proof of content access.', s.get_database),
+            ToolSpec('whu_database_capabilities', 'List typed operations for CNKI/CSMAR engines behind the unified WHU entry. No standalone cnki_* or csmar_* tools are exposed.', self.adapters.capabilities),
+            ToolSpec('whu_call_database', 'Call one allowlisted database operation using arguments from whu_database_capabilities. Manual authentication may be required; CSMAR download consumes quota and must be selected explicitly.', self.adapters.call),
+            ToolSpec('whu_list_databases', 'List/search the complete official database directory, separating subscribed candidates, trial, free and local resources. Use whu_get_database to verify subscription metadata.', s.list_databases),
             ToolSpec('whu_open_database', 'Open a database by its exact name or ID returned by whu_list_databases, using the library' + "'s real entry and the same visible authentication session.", s.open_database),
-            ToolSpec('whu_access_plan', 'Plan library-first access for an actual result URL, retaining its proxy address; identify CNKI/CSMAR supplementary tools without automatically using credentials or quota.', plan),
+            ToolSpec('whu_access_plan', 'Plan library-first access for an actual result URL, retaining its proxy address; identify CNKI/CSMAR internal adapters without automatically using credentials or quota.', plan),
             ToolSpec('whu_login_status', 'Check discovery reachability; institutional fulltext access is verified only by actual reading/downloading.', s.status),
             ToolSpec('whu_open_login_page', 'Open a visible persistent browser. Pass a resolver/publisher URL returned by search or read_page to complete WHU/CARSI/verification manually.', s.open_login),
             ToolSpec('whu_finish_login', 'Save the current manual authentication session locally, then retry the original operation. Does not assert institution-wide permissions.', s.finish_login),
@@ -36,7 +41,10 @@ class WhuRuntime:
         ]
 
     async def aclose(self):
-        await self.service.aclose()
+        try:
+            await self.adapters.aclose()
+        finally:
+            await self.service.aclose()
 
 
 @provider(name='whu', title=INFO.title, summary=SUMMARY, requires_login=True, role='primary')

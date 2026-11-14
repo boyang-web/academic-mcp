@@ -33,13 +33,13 @@ def access_plan(url):
     connector = connector_for(url)
     fallback = None
     if connector == 'cnki':
-        fallback = {'provider': 'cnki', 'role': 'supplementary',
-                    'steps': ['cnki_login_status', 'cnki_search', 'cnki_download_pdf'],
+        fallback = {'provider': 'cnki', 'role': 'internal_adapter', 'entry_tool': 'whu_call_database',
+                    'steps': ['login_status', 'search', 'download_pdf'],
                     'note': '仅在图书馆通路不可用或需知网精确检索时显式使用；其登录态独立。'}
     elif connector == 'csmar':
-        fallback = {'provider': 'csmar', 'role': 'supplementary',
-                    'steps': ['csmar_login_status', 'csmar_list_series', 'csmar_preview', 'csmar_download'],
-                    'note': '国泰安是补充数据访问入口；完整导出消耗机构配额，不自动触发。'}
+        fallback = {'provider': 'csmar', 'role': 'internal_adapter', 'entry_tool': 'whu_call_database',
+                    'steps': ['login_status', 'list_series', 'preview', 'download'],
+                    'note': '国泰安使用网关内部数据适配器；完整导出消耗机构配额，不自动触发。'}
     return {'success': True, 'primary_provider': 'whu',
             'route_kind': 'library' if is_library_url(url) else 'publisher_source',
             'url': url, 'next_tool': 'whu_download_pdf' if is_pdf_url(url) else 'whu_read_page', 'next_arguments': {'url': url},

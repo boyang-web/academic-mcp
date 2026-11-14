@@ -6,7 +6,8 @@ links. A catalogue's 'fulltext' flag is never treated as proof of download right
 from __future__ import annotations
 
 import re
-from urllib.parse import urlencode
+import time
+from urllib.parse import urlencode, urlsplit
 
 from academic_data_mcp.browser.session import AccessError, WebSession, page_problem
 
@@ -53,6 +54,10 @@ class WhuGateway(WebSession):
         self.base = settings.get('BASE_URL', DEFAULT_BASE).rstrip('/')
         self.vid = settings.get('VIEW_ID', '86WHU')
         self.library_url = settings.get('LIBRARY_URL', 'https://www.lib.whu.edu.cn/')
+        self.directory_url = settings.get('DIRECTORY_URL', 'https://whu.metaersp.cn/databaseList')
+        self.library_code = settings.get('LIBRARY_CODE', '131001')
+        self._catalogue = None
+        self._catalogue_time = 0
         super().__init__(config, 'whu', self.base + '/primo-explore/search?' +
                          urlencode({'vid': self.vid, 'lang': 'zh_CN'}))
         # Publisher workflows often require an interactive browser, even after
@@ -102,17 +107,69 @@ class WhuGateway(WebSession):
         return await self.run(op)
 
     async def _database_catalog(self, keyword=''):
-        from .routing import database_entries
-        library_url = self.library_url
-        page = await self.navigate(library_url)
-        await page.wait_for_function('''() => window.searchTemp40 &&
-            Array.isArray(window.searchTemp40.searchFastLinkList)''')
-        groups = await page.evaluate('searchTemp40.searchFastLinkList')
-        rows = database_entries(groups)
+        from .catalog import catalogue_rows
+        if self._catalogue is None or time.monotonic() - self._catalogue_time > 900:
+            page = await self.browser()
+            async with page.expect_response(
+                    lambda r: urlsplit(r.url).path.endswith('/portalLdbguideList'),
+                    timeout=self.timeout * 1000) as pending:
+                await self.navigate(self.directory_url)
+            response = await pending.value
+            payload = await response.json()
+            if response.status != 200 or not payload.get('flag') or not isinstance(payload.get('data'), list):
+                raise AccessError('catalogue_unavailable', '完整数据库目录未返回有效元数据。')
+            self._catalogue = catalogue_rows(payload['data'], self.directory_url)
+            self._catalogue_time = time.monotonic()
+        rows = self._catalogue
         if keyword:
             rows = [r for r in rows if keyword.casefold() in (r['name'] + ' ' + r['id']).casefold()]
-        return {'success': True, 'source_url': library_url, 'count': len(rows), 'databases': rows,
-                'scope': '官网常用数据库导航，非完整订购清单；不代表已验证访问权限。'}
+        return {'success': True, 'source_url': self.directory_url,
+                'count': len(rows), 'catalogue_total': len(self._catalogue), 'databases': rows,
+                'scope': '完整官网目录（含订阅候选、试用、免费和自建），非全部已购；详情需单独核实。'}
+
+    async def _metadata(self, endpoint, body):
+        await self.browser()
+        parsed = urlsplit(self.directory_url)
+        url = f'{parsed.scheme}://{parsed.netloc}/metaapi/meta-bc-resource/edge/ldb/v1.5/{endpoint}'
+        response = await self.context.request.post(url, data=body, headers={'librarycode': self.library_code},
+                                                   timeout=self.timeout * 1000)
+        if response.status != 200:
+            raise AccessError('catalogue_unavailable', f'目录元数据返回 HTTP {response.status}。')
+        payload = await response.json()
+        if not payload.get('flag'):
+            raise AccessError('catalogue_unavailable', '目录元数据服务未返回成功。')
+        return payload
+
+    async def get_database(self, name: str):
+        async def op():
+            from .catalog import database_detail
+            catalogue = await self._database_catalog(name.strip())
+            entries = catalogue['databases']
+            exact = [r for r in entries if name.casefold() in (r['name'].casefold(), r['id'].casefold())]
+            entries = exact or entries
+            if len(entries) != 1:
+                raise AccessError('database_not_identified', '请指定唯一数据库名称或目录 ID。', candidates=entries)
+            row = entries[0]
+            detail = (await self._metadata('portalLdbDetail', {'databaseNum': row['id']})).get('data')
+            if not isinstance(detail, dict) or detail.get('databaseNum') != row['id']:
+                raise AccessError('parse_error', '目录详情身份不匹配。')
+            if str(detail.get('libraryCode', '')) != self.library_code:
+                raise AccessError('metadata_scope_mismatch', '该详情属于其他机构，不能据此判定武大订阅权限。')
+            children, total = [], 0
+            for page in range(1, 11):
+                payload = await self._metadata('getChildDatabaseList',
+                    {'currentPage': page, 'pageSize': 100, 'parentNum': row['id']})
+                total = int(payload.get('total', 0))
+                children.extend({'id': v.get('databaseNum') or v.get('id'),
+                                 'name': v.get('customName') or v.get('databaseName') or v.get('name'),
+                                 'subscription_status': v.get('otherTagName') or '未标明',
+                                 'source_library_code': str(v.get('libraryCode', '')),
+                                 'directory_relation_only': True}
+                                for v in payload.get('data', []))
+                if len(children) >= total or not payload.get('data'):
+                    break
+            return {'success': True, 'database': database_detail(detail, row, children, total, len(children) >= total)}
+        return await self.run(op)
 
     async def list_databases(self, keyword: str = ''):
         return await self.run(lambda: self._database_catalog(keyword))

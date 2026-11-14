@@ -7,7 +7,7 @@ from academic_data_mcp import platform as plat
 from academic_data_mcp.config import AppConfig
 from academic_data_mcp.registry import discover
 
-BUILTIN = ("whu", "cnki", "csmar")
+BUILTIN = ("whu",)
 
 
 def test_config_uses_absolute_platform_paths():
@@ -43,14 +43,12 @@ def test_provider_settings_read_scoped_env(monkeypatch):
 def test_registry_contains_all_builtin_providers():
     entries = discover(force=True)
     assert set(BUILTIN) <= set(entries)
-    assert entries["cnki"].info.requires_login is True
-    assert entries["csmar"].info.requires_login is True
     assert entries["whu"].info.requires_login is True
     assert entries["whu"].info.role == "primary"
-    assert entries["cnki"].info.role == "supplementary"
+    assert "cnki" not in entries and "csmar" not in entries
 
 
-def test_all_providers_register_twenty_six_unique_tools():
+def test_gateway_registers_thirteen_whu_tools():
     pytest.importorskip("mcp")
     from academic_data_mcp.server import create_server
 
@@ -59,8 +57,9 @@ def test_all_providers_register_twenty_six_unique_tools():
     runtimes = [entries[name].factory(config) for name in BUILTIN]
     specs = [spec for runtime in runtimes for spec in runtime.tools()]
     names = [spec.name for spec in specs]
-    assert len(names) == 26
-    assert len(set(names)) == 26
+    assert len(names) == 13
+    assert len(set(names)) == 13
+    assert all(name.startswith("whu_") for name in names)
     assert all(spec.description and spec.handler for spec in specs)
 
     server = create_server(config, runtimes)

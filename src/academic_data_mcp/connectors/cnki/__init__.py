@@ -5,7 +5,6 @@ from datetime import datetime
 
 from academic_data_mcp.base import ProviderInfo, ProviderRuntime, ToolSpec
 from academic_data_mcp.config import AppConfig
-from academic_data_mcp.registry import provider
 
 from .service import Service, busy_safe
 
@@ -83,7 +82,6 @@ class CnkiRuntime:
             pass
 
 
-@provider(name="cnki", title="CNKI 知网", summary=SUMMARY, requires_login=True)
 def create(config: AppConfig) -> ProviderRuntime:
     settings = config.for_provider("cnki")
     service = Service(

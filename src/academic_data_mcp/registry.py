@@ -55,9 +55,7 @@ def discover(force: bool = False) -> dict[str, RegisteredProvider]:
         return dict(_REGISTRY)
     _DISCOVERED = True
 
-    for module in ("academic_data_mcp.gateways.whu",
-                   "academic_data_mcp.connectors.cnki",
-                   "academic_data_mcp.connectors.csmar"):
+    for module in ("academic_data_mcp.gateways.whu",):
         try:
             importlib.import_module(module)
         except Exception:
@@ -71,6 +69,9 @@ def discover(force: bool = False) -> dict[str, RegisteredProvider]:
     except Exception:
         candidates = []
     for entry in candidates:
+        if entry.value in {'academic_data_mcp.connectors.cnki:create',
+                           'academic_data_mcp.connectors.csmar:create'}:
+            continue  # Ignore stale 0.3 editable-install entry points after upgrading.
         if entry.name in _REGISTRY:
             continue
         try:
