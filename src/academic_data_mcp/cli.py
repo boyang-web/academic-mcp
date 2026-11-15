@@ -18,7 +18,7 @@ from .registry import discover, get
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="academic-data-mcp",
-        description="武大图书馆主入口，知网与国泰安补充直连",
+        description="武大图书馆统一入口，内置知网与国泰安适配器",
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
                        help="auto / chrome / msedge / chromium")
     serve.add_argument("--show-browser", action="store_true", default=None)
     serve.add_argument("--providers", default=None,
-                       help="逗号分隔，例如 whu,cnki,csmar")
+                       help="启用入口，默认 whu")
 
     sub.add_parser("providers", help="列出已注册的数据源")
     sub.add_parser("doctor", help="检查运行环境与配置")
@@ -92,8 +92,14 @@ def main(argv: list[str] | None = None) -> int:
     if command == "doctor":
         return _doctor(config)
 
-    for name in config.enabled:
-        get(name)  # 提前校验，避免服务启动后才发现未知数据源
+    try:
+        for name in config.enabled:
+            get(name)  # Validate before starting any browser/runtime.
+    except KeyError as error:
+        print(f"启动失败：{error.args[0]}\n"
+              "请检查 MCP 客户端配置中的 ADM_PROVIDERS 或 --providers；"
+              "当前内置入口为 whu，旧配置中的 csda 已删除。", file=sys.stderr)
+        return 2
 
     runtimes = [get(name).factory(config) for name in config.enabled]
     from .server import create_server

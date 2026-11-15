@@ -52,6 +52,34 @@ MCP 客户端配置示例（将路径替换为本机绝对路径）：
 
 Windows 使用 `.venv\\Scripts\\python.exe`。更新后需重启 MCP 客户端，重新发现工具。
 
+## WorkBuddy 连接与旧配置迁移
+
+WorkBuddy 的本地 `~/.workbuddy/mcp.json` 可使用以下配置（替换解释器为实际绝对路径）：
+
+```json
+{
+  "mcpServers": {
+    "academic-data": {
+      "command": "/absolute/path/.venv/bin/python",
+      "args": ["-m", "academic_data_mcp", "serve"],
+      "env": {"ADM_PROVIDERS": "whu"}
+    }
+  }
+}
+```
+
+修改已有配置时保留其他服务。旧配置 `ADM_PROVIDERS=cnki,csmar,csda` 中的 `csda` 已删除，会使服务启动失败，客户端可能只显示 `Connection closed`；请将此项目的列表改为 `whu`。旧 `cnki` / `csmar` 名称可迁移，但不应继续使用已删除的 CSDA。
+
+先用配置中同一解释器执行 `python -m pip install -e /absolute/path/to/repo`，保证在任意工作目录都能导入模块，不能只依靠终端激活虚拟环境。保存后在 WorkBuddy 中重新连接该服务；若仍使用旧进程/配置，重启客户端。
+
+可以直接验证客户端真实配置，而非只测仓库内的开发环境：
+
+```bash
+.venv/bin/python scripts/verify_client_config.py --config ~/.workbuddy/mcp.json --server academic-data
+```
+
+脚本使用配置中的 command/args/env，在仓库外启动，检查协议握手、13 个 WHU 工具和一次无需网络的能力调用；不会注入项目 PYTHONPATH、打开浏览器或触发下载。通过仅证明服务连接和工具调用正常，数据库访问仍需网络与本人权限。
+
 ## 推荐使用流程
 
 1. 使用 `whu_search` 查论文，或用 `whu_list_databases` 查询完整数据库目录；`whu_get_database` 核实订阅状态与已购说明。
